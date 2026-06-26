@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Banca - Sorteio de Bingo</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background: #f0f0f0; }
+    h1 { color: #333; }
+    #numerosSorteados { margin-top: 10px; font-weight: bold; }
+    button { margin: 5px 0; padding: 10px; }
+    textarea { width: 100%; height: 150px; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <h1>🎯 Banca - Sorteio Bingo</h1>
+  <button onclick="sortearNumero()">Sortear Número</button>
+  <button onclick="resetar()">🔄 Resetar</button>
+  <button onclick="exportarJSON()">⬇️ Exportar JSON</button>
+  <div id="numerosSorteados">Números sorteados: <span id="sorteados"></span></div>
+  <textarea id="jsonExportado" placeholder="JSON exportado aparecerá aqui..."></textarea>
+
+  <script>
+    const TOTAL_NUMEROS = 60;
+
+    function carregarSorteados() {
+      return JSON.parse(localStorage.getItem("bingo_sorteados") || "[]");
+    }
+
+    function salvarSorteados(sorteados) {
+      localStorage.setItem("bingo_sorteados", JSON.stringify(sorteados));
+    }
+
+    function sortearNumero() {
+      let sorteados = carregarSorteados();
+      if (sorteados.length >= TOTAL_NUMEROS) {
+        alert("Todos os números já foram sorteados!");
+        return;
+      }
+
+      let num;
+      do {
+        num = Math.floor(Math.random() * TOTAL_NUMEROS) + 1;
+      } while (sorteados.includes(num));
+
+      sorteados.push(num);
+      salvarSorteados(sorteados);
+      mostrarNumeros();
+    }
+
+    function mostrarNumeros() {
+      const sorteados = carregarSorteados();
+      document.getElementById("sorteados").textContent = sorteados.join(", ");
+    }
+
+    function exportarJSON() {
+      const json = JSON.stringify({ numeros: carregarSorteados() }, null, 2);
+      document.getElementById("jsonExportado").value = json;
+    }
+
+    function resetar() {
+      localStorage.removeItem("bingo_sorteados");
+      document.getElementById("jsonExportado").value = "";
+      mostrarNumeros();
+    }
+
+    mostrarNumeros();
+  </script>
+</body>
+</html>

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Participante - Cartela de Bingo</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; background: #eaffea; }
+    h1 { color: #2a5d2a; }
+    table { border-collapse: collapse; margin-top: 10px; }
+    td {
+      border: 1px solid #999;
+      padding: 15px;
+      text-align: center;
+      cursor: pointer;
+      width: 50px;
+      height: 50px;
+      transition: background 0.3s;
+    }
+    td.marcado {
+      background: #4caf50;
+      color: white;
+    }
+    .bingo-animacao {
+      animation: piscar 0.8s infinite alternate;
+      font-size: 24px;
+      font-weight: bold;
+      color: #2e7d32;
+    }
+    @keyframes piscar {
+      0%   { opacity: 1; }
+      100% { opacity: 0.4; }
+    }
+    #resultado {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    .valido { color: green; }
+    .invalido { color: red; }
+    textarea { width: 100%; height: 150px; margin-top: 10px; }
+    button { margin: 5px 0; padding: 10px; }
+  </style>
+</head>
+<body>
+  <h1>🎟️ Cartela de Bingo - Participante</h1>
+  <button onclick="gerarCartela()">🔄 Nova Cartela</button>
+  <button onclick="resetar()">🔄 Resetar</button>
+  <table id="cartela"></table>
+  <h3>Importar JSON da Banca:</h3>
+  <textarea id="jsonInput" placeholder="Cole aqui o JSON da banca..."></textarea>
+  <button onclick="verificarPremio()">✅ Verificar Prêmio</button>
+  <div id="resultado"></div>
+
+  <script>
+    const LINHAS = 4, COLUNAS = 4;
+    const TOTAL = 60;
+
+    function gerarCartela() {
+      let numeros = [];
+      while (numeros.length < 16) {
+        let n = Math.floor(Math.random() * TOTAL) + 1;
+        if (!numeros.includes(n)) numeros.push(n);
+      }
+      numeros.sort((a, b) => a - b);
+
+      localStorage.setItem("bingo_cartela", JSON.stringify(numeros));
+      localStorage.setItem("bingo_marcados", JSON.stringify([]));
+      desenharCartela();
+    }
+
+    function getCartela() {
+      return JSON.parse(localStorage.getItem("bingo_cartela") || "[]");
+    }
+
+    function getMarcados() {
+      return JSON.parse(localStorage.getItem("bingo_marcados") || "[]");
+    }
+
+    function salvarMarcados(marcados) {
+      localStorage.setItem("bingo_marcados", JSON.stringify(marcados));
+    }
+
+    function desenharCartela() {
+      const cartela = getCartela();
+      const marcados = getMarcados();
+      const tabela = document.getElementById("cartela");
+      tabela.innerHTML = "";
+
+      if (cartela.length !== 16 || cartela.some(n => n < 1 || n > TOTAL)) {
+        gerarCartela();
+        return;
+      }
+
+      for (let i = 0; i < LINHAS; i++) {
+        const linha = document.createElement("tr");
+        for (let j = 0; j < COLUNAS; j++) {
+          const idx = i * COLUNAS + j;
+          const td = document.createElement("td");
+          const numero = cartela[idx];
+          td.textContent = numero;
+
+          if (marcados.includes(numero)) td.classList.add("marcado");
+
+          td.onclick = () => {
+            let m = getMarcados();
+            if (m.includes(numero)) {
+              m = m.filter(n => n !== numero);
+            } else {
+              m.push(numero);
+            }
+            salvarMarcados(m);
+            desenharCartela();
+            verificarBingoLocal();
+          };
+
+          linha.appendChild(td);
+        }
+        tabela.appendChild(linha);
+      }
+    }
+
+    function verificarBingoLocal() {
+      const marcados = getMarcados();
+      const resultado = document.getElementById("resultado");
+      if (marcados.length === 16) {
+        resultado.innerHTML = "🎉 <span class='bingo-animacao'>BINGO!</span>";
+      } else {
+        resultado.textContent = "";
+      }
+    }
+
+    function verificarPremio() {
+      let bancaJSON;
+      try {
+        bancaJSON = JSON.parse(document.getElementById("jsonInput").value);
+      } catch {
+        alert("JSON inválido");
+        return;
+      }
+
+      const sorteados = bancaJSON.numeros || [];
+      const marcados = getMarcados();
+      const acertos = marcados.filter(n => sorteados.includes(n));
+      const resultado = document.getElementById("resultado");
+
+      if (acertos.length === 16) {
+        resultado.innerHTML = "🎉 <span class='bingo-animacao valido'>BINGO VALIDADO!</span>";
+      } else {
+        resultado.innerHTML = `❌ <span class='invalido'>Você acertou ${acertos.length} número(s). Ainda não é BINGO.</span>`;
+      }
+    }
+
+    function resetar() {
+      localStorage.removeItem("bingo_cartela");
+      localStorage.removeItem("bingo_marcados");
+      document.getElementById("jsonInput").value = "";
+      document.getElementById("resultado").textContent = "";
+      gerarCartela();
+    }
+
+    const cartela = getCartela();
+    if (cartela.length !== 16 || cartela.some(n => n < 1 || n > TOTAL)) {
+      gerarCartela();
+    } else {
+      desenharCartela();
+    }
+  </script>
+</body>
+</html>
